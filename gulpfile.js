@@ -6,7 +6,7 @@ const file = require("gulp-file");
 const webpack = require('webpack-stream');
 const exec = require("child_process").exec;
 const help = require("gulp-task-listing");
-
+const eslint = require("gulp-eslint");
 
 gulp.task("help", help);
 
@@ -22,7 +22,14 @@ const WATCH_GLOBS = [
   "package.json"
 ];
 
-gulp.task("default", ["build"]);
+gulp.task("default", ["lint", "build"]);
+
+gulp.task("lint", function () {
+  return gulp.src(["**/*.js", "!node_modules/**"])
+    .pipe(eslint())
+    .pipe(eslint.format())
+    .pipe(eslint.failAfterError());
+});
 
 gulp.task("build", ["webpack"]);
 
