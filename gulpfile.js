@@ -1,10 +1,9 @@
 const gulp = require("gulp");
 const mocha = require("gulp-mocha");
 const istanbul = require("gulp-istanbul");
-const browserify = require("./support/browserify.js");
 const file = require("gulp-file");
 const webpack = require('webpack-stream');
-const exec = require("child_process").exec;
+const child = require("child_process");
 const help = require("gulp-task-listing");
 const eslint = require("gulp-eslint");
 
@@ -51,7 +50,7 @@ gulp.task("webpack", function() {
         loaders: [{
           test: /\.(js|jsx)?$/,
           exclude: /(node_modules|bower_components)/,
-          loader: 'babel', // 'babel-loader' is also a legal name to reference 
+          loader: 'babel', // 'babel-loader' is also a legal name to reference
           query: {
             presets: ['react', 'es2015']
           }
@@ -59,18 +58,6 @@ gulp.task("webpack", function() {
       }
     }))
     .pipe(gulp.dest(BUILD_TARGET_DIR));
-});
-
-// generate engine.io.js using browserify
-gulp.task("browserify", function() {
-  return browserify(function(err, output) {
-    if (err) throw err;
-    // TODO: use stream instead of buffering
-    file(BUILD_TARGET_FILENAME, output, {
-        src: true
-      })
-      .pipe(gulp.dest(BUILD_TARGET_DIR));
-  });
 });
 
 // "gulp watch" from terminal to automatically rebuild when
@@ -88,6 +75,7 @@ const TEST_FILE = "./test/index.js";
 const TEST_SUPPORT_SERVER_FILE = "./test/support/server.js";
 
 gulp.task("test", function() {
+
   if (process.env.hasOwnProperty("BROWSER_NAME")) {
     return testZuul();
   } else {
@@ -148,9 +136,9 @@ function testZuul() {
   const ZUUL_CMD = "./node_modules/zuul/bin/zuul";
   const args = [
     "--browser-name",
-    process.env.BROWSER_NAME,
+    process.env.BROWSER_NAME || "missing",
     "--browser-version",
-    process.env.BROWSER_VERSION
+    process.env.BROWSER_VERSION || "missing"
   ];
   // add browser platform argument if valid
   if (process.env.hasOwnProperty("BROWSER_PLATFORM")) {
@@ -159,15 +147,9 @@ function testZuul() {
   }
 
   args.push("test/index.js");
-
-  const zuul = exec(ZUUL_CMD, args, {
+  
+  return child.spawn(ZUUL_CMD, args, {
     stdio: "inherit"
-  });
-  zuul.stdout.on("data", function(d) {
-    console.log(d);
-  });
-  zuul.stderr.on("data", function(d) {
-    console.log(d);
   });
 }
 
